@@ -1,0 +1,21 @@
+type ShippingUpdate {
+    container_id: ID!
+    status: String!
+    timestamp: String!
+}
+
+type Query {
+    getShippingUpdate(container_id: ID!): ShippingUpdate
+    getCustomerShipments(customer_id: ID!): [ShippingUpdate]
+}
+
+
+type Mutation {
+    updateShippingStatus(container_id: ID!, status: String!): ShippingUpdate
+}
+
+type Subscription {
+
+    onShippingUpdate(container_id: ID!): ShippingUpdate
+        @aws_subscribe(mutations: ["updateShippingStatus"])
+}
