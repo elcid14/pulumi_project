@@ -1,6 +1,7 @@
 import pulumi
 import pulumi_aws as aws
 import pulumi_random as random
+from ..backend.utils import initalize_db_schema
 
 def create_rds_postgresql():
     # Generate a random password for the database
@@ -17,7 +18,7 @@ def create_rds_postgresql():
                 "protocol": "tcp",
                 "from_port": 5432,
                 "to_port": 5432,
-                "cidr_blocks": ["0.0.0.0/0"],  # Adjust for security
+                "cidr_blocks": ["0.0.0.0/0"],
             }
         ],
         egress=[
@@ -45,9 +46,16 @@ def create_rds_postgresql():
         vpc_security_group_ids=[db_security_group.id]
     )
 
+    # Export this so I can verify on the console
     pulumi.export("RDS_Endpoint", rds_instance.endpoint)
     pulumi.export("RDS_DB_Name", rds_instance.name)
     pulumi.export("RDS_Username", rds_instance.username)
     pulumi.export("RDS_Password", rds_instance.password)
     
+    pulumi.runtime.run_on_output(rds_instance.endpoint, 
+            initalize_db_schema(rds_instance.endpoint, rds_instance.username, rds_instance.password, rds_instance.name))
+    
     return rds_instance
+
+
+

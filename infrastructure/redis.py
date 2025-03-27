@@ -1,8 +1,6 @@
 import pulumi_aws as aws
 
 def create_redis():
-    
-
     redis_cluster = aws.elasticache.Cluster("celeryRedisCluster",
         cluster_id="celery-redis-cluster",
         engine="redis",
