@@ -1,47 +1,82 @@
-from celery import Celery
 import os
-import redis
-import psycopg2
-import boto3
 import json
+import psycopg2
+from redis import Redis
+from celery import Celery, states
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from database import Shipment  # SQLAlchemy model
 
-app = Celery("tasks",
-    broker=os.getenv("SQS_QUEUE_URL"),
-    backend=os.getenv("REDIS_URL")
+BROKER_URL = os.getenv("CELERY_BROKER_URL")  
+BACKEND_URL = os.getenv("CELERY_BACKEND_URL")  
+DATABASE_URL = os.getenv("DATABASE_URL") 
+
+# Initialize Celery with Redis backend to track state
+app = Celery(
+    "tasks",
+    broker=BROKER_URL,
+    backend=BACKEND_URL
 )
 
-# Redis Client
-redis_client = redis.StrictRedis.from_url(os.getenv("REDIS_URL"), decode_responses=True)
+# Redis Client for storing task states
+redis_client = Redis.from_url(BACKEND_URL)
 
 # PostgreSQL Connection
-conn = psycopg2.connect(os.getenv("RDS_DB_URL"))
-cursor = conn.cursor()
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
 
-# SNS Client
-sns_client = boto3.client("sns", region_name="us-east-1")
-SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN")
 
 @app.task(bind=True)
-def process_shipping_update(self, message):
-    """Processes shipping update, stores in Redis, updates DB, triggers WebSocket and AppSync"""
+def process_shipment(self, data):
+    """
+    Process shipment data:
+    1. Store task state in Redis.
+    2. Persist shipment status in PostgreSQL (RDS).
+    """
+    shipment_id = data["shipment_id"]
+    task_id = self.request.id  #this is the task id
+
+    # Store task state in Redis, first status is pending
+    redis_client.set(f"task:{task_id}", json.dumps({"state": states.PENDING, "shipment_id": shipment_id}))
+    print(f" Task {task_id} pending for shipment {shipment_id}")
+
     try:
-        container_id = message["container_id"]
-        status = message["status"]
+        # store for caching
+        redis_client.set(f"shipment:{shipment_id}", json.dumps(data))
+        print(f"Stored in Redis: shipment:{shipment_id}")
 
-        # Update PostgreSQL
-        cursor.execute("UPDATE shipments SET status = %s WHERE container_id = %s", (status, container_id))
-        conn.commit()
+        # Step 2: Persist final shipment status in PostgreSQL (RDS)
+        session = SessionLocal()
+        shipment = session.query(Shipment).filter_by(shipment_id=shipment_id).first()
+        
+        if shipment:
+            # Update existing shipment record
+            shipment.status = data["status"]
+            shipment.location = data["location"]
+        else:
+            # Create new shipment record
+            shipment = Shipment(
+                shipment_id=shipment_id,
+                status=data["status"],
+                location=data["location"]
+            )
+            session.add(shipment)
 
-        # Store in Redis cache
-        redis_client.set(container_id, status, ex=3600)
+        session.commit()
+        print(f"Saved to RDS: shipment {shipment_id}")
 
-        # Send notification to SNS for AppSync Subscription
-        sns_message = json.dumps({
-            "container_id": container_id,
-            "status": status
-        })
-        sns_client.publish(TopicArn=SNS_TOPIC_ARN, Message=sns_message)
+        # Update task state in Redis to SUCCESS
+        redis_client.set(f"task:{task_id}", json.dumps({"state": states.SUCCESS, "shipment_id": shipment_id}))
 
-        return f"Container {container_id} updated to {status}"
     except Exception as e:
-        self.retry(exc=e)
+        session.rollback()
+        print(f" Error saving to RDS: {e}")
+
+        # Update task state in Redis to FAILURE
+        redis_client.set(f"task:{task_id}", json.dumps({"state": states.FAILURE, "error": str(e)}))
+
+    finally:
+        session.close()
+
+    return {"status": "processed", "shipment_id": shipment_id, "task_id": task_id}
+
