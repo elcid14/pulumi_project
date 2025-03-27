@@ -3,12 +3,10 @@ import json
 import psycopg2
 from redis import Redis
 from celery import Celery, states
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from database import Shipment  # SQLAlchemy model
 
-BROKER_URL = os.getenv("CELERY_BROKER_URL")  
-BACKEND_URL = os.getenv("CELERY_BACKEND_URL")  
+BROKER_URL = os.getenv("SQS_QUEUE_URL")  
+BACKEND_URL = os.getenv("REDIS_URL")  
 DATABASE_URL = os.getenv("DATABASE_URL") 
 
 # Initialize Celery with Redis backend to track state
@@ -52,13 +50,11 @@ def process_shipment(self, data):
         if shipment:
             # Update existing shipment record
             shipment.status = data["status"]
-            shipment.location = data["location"]
         else:
             # Create new shipment record
             shipment = Shipment(
                 shipment_id=shipment_id,
                 status=data["status"],
-                location=data["location"]
             )
             session.add(shipment)
 

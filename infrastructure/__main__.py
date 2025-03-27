@@ -20,8 +20,8 @@ setup_cloudwatch()
 
 # Define exports
 pulumi.export('bucket_name', bucket.id)
-pulumi.export("SQS_Queue_URL", sqs_queue.url)
-pulumi.export("RDS Instnace", rds_instance.endpoint)
-pulumi.export("Redis Instance", redis_instance.cluster_address)
+pulumi.export("sqs_url", sqs_queue.url)
+pulumi.export("rds_endpoint", rds_instance.endpoint)
+pulumi.export("redis_endpoint", redis_instance.cache_nodes[0]["address"])
 
 
