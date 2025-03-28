@@ -1,7 +1,7 @@
 import pulumi
 import pulumi_aws as aws
 import pulumi_random as random
-from ..backend.utils import initalize_db_schema
+from utils import initalize_db_schema
 
 def create_rds_postgresql():
     # Generate a random password for the database
