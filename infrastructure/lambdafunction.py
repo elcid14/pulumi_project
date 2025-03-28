@@ -2,7 +2,7 @@ from pulumi_aws import aws
 import pulumi
 import json
 
-def create_shipment_lambda(sqs_resource , sqs_url: str):
+def create_shipment_lambda(sqs_queue):
     # execution role
     lambda_role = aws.iam.Role("lambdaRole",
     assume_role_policy=json.dumps({
@@ -20,6 +20,24 @@ def create_shipment_lambda(sqs_resource , sqs_url: str):
     role=lambda_role.name,
     policy_arn="arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
     )
+    
+    # attach lambda execution policy
+    sqs_policy = aws.iam.Policy("sqsSendMessagePolicy",
+    policy=sqs_queue.arn.apply(lambda arn: f"""{{
+        "Version": "2012-10-17",
+        "Statement": [{{
+            "Effect": "Allow",
+            "Action": "sqs:SendMessage",
+            "Resource": "{arn}"
+        }}]
+    }}""")
+)
+    
+    aws.iam.RolePolicyAttachment("attachSQSPolicy",
+    role=lambda_role.name,
+    policy_arn=sqs_policy.arn
+        )
+
 
     # defined lambda
     lambda_function = aws.lambda_.Function("createShipmentLambda",
@@ -33,7 +51,7 @@ def create_shipment_lambda(sqs_resource , sqs_url: str):
     }),
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
-            "SQS_QUEUE_URL": sqs_url
+            "SQS_QUEUE_URL": sqs_queue.url
         }
     )
     )
