@@ -3,6 +3,7 @@ import json
 import psycopg2
 from redis import Redis
 from celery import Celery, states
+from sqlmodel import Field,SQLModel, create_engine, Session
 from database import Shipment  # SQLAlchemy model
 
 BROKER_URL = os.getenv("SQS_QUEUE_URL")  
@@ -21,7 +22,7 @@ redis_client = Redis.from_url(BACKEND_URL)
 
 # PostgreSQL Connection
 engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine)
+
 
 
 @app.task(bind=True)
