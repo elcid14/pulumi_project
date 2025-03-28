@@ -15,8 +15,8 @@ class Shipment(SQLModel, tabel=True):
     vessel: str
     port_of_deaprture: str
     port_of_arrival: str
-    ship_date: datetime
-    arrival_date: datetime
+    ship_date: str
+    arrival_date: str
     notes: str
     current_location:str
     weight: float

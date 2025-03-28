@@ -1,16 +1,13 @@
 import pulumi
 import pulumi_aws as aws
-import pulumi_random as random
-from utils import initalize_db_schema
+import os
+
+
 
 def create_rds_postgresql():
-    # Generate a random password for the database
-    db_password = random.RandomPassword("dbPassword",
-        length=16,
-        special=False
-    )
-
-    #security groupd for rds
+ 
+    
+    # security groupd for rds
     db_security_group = aws.ec2.SecurityGroup("rdsSecurityGroup",
         description="Allow inbound access to RDS PostgreSQL",
         ingress=[
@@ -39,7 +36,7 @@ def create_rds_postgresql():
         instance_class="db.t3.micro",
         name="logisticstrackingdb",
         username="pulumi",
-        password=db_password.result,
+        password=os.getenv("DB_PASSWORD"),
         publicly_accessible=False,
         multi_az=False,
         skip_final_snapshot=True,
@@ -50,10 +47,9 @@ def create_rds_postgresql():
     pulumi.export("RDS_Endpoint", rds_instance.endpoint)
     pulumi.export("RDS_DB_Name", rds_instance.name)
     pulumi.export("RDS_Username", rds_instance.username)
-    pulumi.export("RDS_Password", rds_instance.password)
     
-    pulumi.runtime.run_on_output(rds_instance.endpoint, 
-            initalize_db_schema(rds_instance.endpoint, rds_instance.username, rds_instance.password, rds_instance.name))
+    # pulumi.runtime.run_on_output(rds_instance.endpoint, 
+    #         initalize_db_schema(rds_instance.endpoint, rds_instance.username, rds_instance.password, rds_instance.name))
     
     return rds_instance
 

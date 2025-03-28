@@ -1,0 +1,3 @@
+{
+  "body": "{\"shipmentDetails\":{\"sender\":{\"name\":\"John Doe\",\"company\":\"Acme Shipping\",\"address\":{\"street\":\"123 Shipping Lane\",\"city\":\"Logistics City\",\"state\":\"CA\",\"zipCode\":\"90210\",\"country\":\"US\"}},\"recipient\":{\"name\":\"Jane Smith\",\"company\":\"Global Receiving\",\"address\":{\"street\":\"456 Delivery Street\",\"city\":\"Reception Town\",\"state\":\"NY\",\"zipCode\":\"10001\",\"country\":\"US\"}},\"package\":{\"weight\":{\"value\":15.5,\"unit\":\"kg\"},\"dimensions\":{\"length\":50,\"width\":40,\"height\":30,\"unit\":\"cm\"}},\"shippingMethod\":{\"service\":\"Express\",\"priority\":\"High\"}}}"
+}

@@ -46,7 +46,7 @@ def create_shipment_lambda(sqs_queue):
     handler="createShipment.lambda_handler",
     memory_size=128,
     timeout=10,
-    code=pulumi.FileArchive("../backend/lambdas"), 
+    code=pulumi.FileArchive("backend/lambdas"), 
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
             "SQS_QUEUE_URL": sqs_queue.url
