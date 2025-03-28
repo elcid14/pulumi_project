@@ -2,11 +2,11 @@
 
 import pulumi # type: ignore
 from pulumi_aws import s3 # type: ignore
-from redis import create_redis
+# from redis import create_redis
 from sqs import create_sqs_queue
-from ecs import create_ecs_cluster
+# from ecs import create_ecs_cluster
 from monitoring import setup_cloudwatch
-from rds import create_rds_postgresql
+# from rds import create_rds_postgresql
 from lambdafunction import create_shipment_lambda
 
 # Create an AWS resources
@@ -14,7 +14,7 @@ from lambdafunction import create_shipment_lambda
 sqs_queue = create_sqs_queue()
 # ecs_cluster = create_ecs_cluster()
 # rds_instance = create_rds_postgresql()
-lambda_function_create_shipment = create_shipment_lambda()
+lambda_function_create_shipment = create_shipment_lambda(sqs_queue)
 
 # instantiate cloudwatch
 setup_cloudwatch()

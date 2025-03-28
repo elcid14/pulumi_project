@@ -1,4 +1,4 @@
-from pulumi_aws import aws
+import pulumi_aws as aws
 import pulumi
 import json
 
@@ -43,12 +43,10 @@ def create_shipment_lambda(sqs_queue):
     lambda_function = aws.lambda_.Function("createShipmentLambda",
     role=lambda_role.arn,
     runtime="python3.9",
-    handler="lambda_function.lambda_handler",
+    handler="createShipment.lambda_handler",
     memory_size=128,
     timeout=10,
-    code=pulumi.AssetArchive({
-        ".": pulumi.FileAsset("../backend/lambdas/createShipment.py")
-    }),
+    code=pulumi.FileArchive("../backend/lambdas"), 
     environment=aws.lambda_.FunctionEnvironmentArgs(
         variables={
             "SQS_QUEUE_URL": sqs_queue.url
